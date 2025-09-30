@@ -1,0 +1,27 @@
+{
+  "references": [],
+  "guides": [
+    {
+      "name": "SRE Bench",
+      "sidebar": [
+        {
+          "name": "Getting Started with Scalar",
+          "type": "folder",
+          "icon": "rocket",
+          "children": [
+            { "path": "guides/quick-start/introduction.md", "type": "page", "name": "Overview" },
+            { "path": "guides/quick-start/details/quickstart.md", "type": "page", "name": "Quickstart" },
+            { "path": "guides/quick-start/details/development.md", "type": "page", "name": "Development" }
+          ]
+        }
+      ]
+    }
+  ],
+  "siteConfig": {
+    "theme": "alternate",
+    "logo": {
+      "darkMode": "https://github.com/agentkube/docs/blob/main/logo/light.png?raw=true",
+      "lightMode": "https://github.com/agentkube/docs/blob/main/logo/dark.png?raw=true"
+    }
+  }
+}
