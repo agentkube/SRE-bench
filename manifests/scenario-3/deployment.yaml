@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-app
+  namespace: app
+  labels:
+    app: memory-app
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: memory-app
+  template:
+    metadata:
+      labels:
+        app: memory-app
+        version: v1
+    spec:
+      containers:
+      - name: app
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Application v1 starting..."
+            echo "Memory usage: Normal (50MB baseline)"
+
+            # Simulate normal memory usage
+            COUNTER=0
+            while true; do
+              COUNTER=$((COUNTER + 1))
+
+              # Normal operation - no memory leak
+              echo "[$(date)] Request #${COUNTER} processed - Memory: 50MB (stable)"
+              sleep 2
+
+              # Simulate some CPU usage for metrics
+              if [ $((COUNTER % 5)) -eq 0 ]; then
+                dd if=/dev/zero of=/dev/null bs=1M count=10 2>/dev/null &
+              fi
+            done
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10

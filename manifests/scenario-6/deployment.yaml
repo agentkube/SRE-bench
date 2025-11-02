@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-service
+  namespace: app-prod
+  labels:
+    app: api-service
+  annotations:
+    # ArgoCD Image Updater annotation
+    # This tells ArgoCD Image Updater to manage this image
+    argocd-image-updater.argoproj.io/image-list: api=nginx:1.2  # Simulating tag pattern
+    argocd-image-updater.argoproj.io/api.update-strategy: semver
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-service
+  template:
+    metadata:
+      labels:
+        app: api-service
+        version: v1.2.1-hotfix  # Expected version
+    spec:
+      containers:
+      - name: api
+        # IMPORTANT: This should be v1.2.1-hotfix but might get updated to v1.2 by image updater
+        image: nginx:1.21  # Using nginx as placeholder (simulates v1.2.1-hotfix)
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "API Service starting..."
+            echo "Version: v1.2.1-hotfix"
+            echo "Checking configuration..."
+
+            # v1.2.1-hotfix requires NEW_FEATURE_FLAG
+            if [ -z "${NEW_FEATURE_FLAG}" ]; then
+              echo "ERROR: NEW_FEATURE_FLAG is required in v1.2.1-hotfix!"
+              echo "This version was deployed to fix a critical bug"
+              echo "Missing configuration will cause failures"
+              exit 1
+            fi
+
+            echo "✓ Configuration validated"
+            echo "✓ NEW_FEATURE_FLAG: ${NEW_FEATURE_FLAG}"
+            echo "API server ready"
+
+            COUNTER=0
+            while true; do
+              COUNTER=$((COUNTER + 1))
+              echo "[$(date)] Request #${COUNTER} - Status: OK"
+              sleep 3
+            done
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app.env
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: log.level
+        - name: NEW_FEATURE_FLAG
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: new.feature.flag
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: database.url
+        ports:
+        - containerPort: 8080
+          name: http
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10

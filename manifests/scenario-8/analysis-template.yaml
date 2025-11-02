@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: canary-demo
+spec:
+  args:
+  - name: service-name
+  metrics:
+  - name: success-rate
+    # MISCONFIGURED: This analysis will be slow to detect failures
+    # Should fail fast but takes 2 minutes to collect enough samples
+    interval: 30s
+    successCondition: result >= 0.95
+    failureLimit: 3
+    provider:
+      job:
+        spec:
+          template:
+            spec:
+              containers:
+              - name: test
+                image: busybox:latest
+                command: ["/bin/sh", "-c"]
+                args:
+                  - |
+                    echo "Running success rate analysis for {{args.service-name}}..."
+
+                    # Simulate checking error rate from logs
+                    # In real scenario, this would query Prometheus
+                    # BUG: Takes too long to collect metrics (30s intervals)
+
+                    TOTAL=100
+                    SUCCESS=5  # Only 5% success due to schema incompatibility
+                    ERRORS=95  # 95% errors
+
+                    SUCCESS_RATE=$(echo "scale=2; $SUCCESS / $TOTAL" | bc)
+
+                    echo "Total Requests: $TOTAL"
+                    echo "Successful: $SUCCESS"
+                    echo "Errors: $ERRORS"
+                    echo "Success Rate: $SUCCESS_RATE"
+                    echo "Threshold: 0.95"
+
+                    if [ $(echo "$SUCCESS_RATE < 0.95" | bc) -eq 1 ]; then
+                      echo "FAILURE: Success rate ($SUCCESS_RATE) below threshold (0.95)"
+                      echo "ERROR: Canary deployment has critical issues"
+                      exit 1
+                    fi
+
+                    echo "SUCCESS: Success rate acceptable"
+              restartPolicy: Never
+          backoffLimit: 1

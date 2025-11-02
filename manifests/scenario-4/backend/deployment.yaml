@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: backend
+  labels:
+    app: auth-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        tier: backend
+    spec:
+      containers:
+      - name: auth
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Auth Service starting..."
+            echo "Listening on port 8080"
+
+            # Simulate auth service responding to requests
+            while true; do
+              echo "[$(date)] Auth request received - Validating token..."
+              echo "[$(date)] Token validated successfully"
+              sleep 2
+            done
+        ports:
+        - containerPort: 8080
+          name: http
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Auth request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10

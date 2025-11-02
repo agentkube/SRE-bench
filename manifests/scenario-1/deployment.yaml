@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: demo-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      containers:
+      - name: app
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting application..."
+            echo "Environment: ${APP_ENV}"
+            echo "Log Level: ${LOG_LEVEL}"
+            echo "Feature Flag: ${FEATURE_FLAG}"
+            if [ -z "${NEW_FEATURE}" ]; then
+              echo "ERROR: NEW_FEATURE environment variable is missing!"
+              exit 1
+            fi
+            echo "New Feature: ${NEW_FEATURE}"
+            echo "Application running..."
+            while true; do sleep 3600; done
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app.env
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: log.level
+        - name: FEATURE_FLAG
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: feature.flag
+        - name: NEW_FEATURE
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: new.feature
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "true"
+          initialDelaySeconds: 5
+          periodSeconds: 5

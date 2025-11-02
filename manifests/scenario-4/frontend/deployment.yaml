@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-frontend
+  namespace: frontend
+  labels:
+    app: web-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-frontend
+  template:
+    metadata:
+      labels:
+        app: web-frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: web
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Frontend Service starting..."
+            echo "Will call auth-service.backend.svc.cluster.local:8080"
+
+            REQUEST_COUNT=0
+            ERROR_COUNT=0
+
+            while true; do
+              REQUEST_COUNT=$((REQUEST_COUNT + 1))
+              echo "[$(date)] Request #${REQUEST_COUNT} - Calling auth service..."
+
+              # Simulate HTTP call to backend auth service
+              # Use timeout to detect network policy blocking
+              if timeout 2 nc -zv auth-service.backend.svc.cluster.local 8080 2>&1 | grep -q succeeded; then
+                echo "[$(date)] ✓ Auth service responded - Request successful"
+              else
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                echo "[$(date)] ✗ ERROR: Cannot reach auth service (timeout)"
+                echo "[$(date)] ✗ 504 Gateway Timeout - Retrying..."
+
+                # Retry storm simulation
+                echo "[$(date)] Retry attempt 1/3..."
+                sleep 1
+                echo "[$(date)] Retry attempt 2/3..."
+                sleep 1
+                echo "[$(date)] Retry attempt 3/3..."
+              fi
+
+              echo "[$(date)] Error rate: ${ERROR_COUNT}/${REQUEST_COUNT}"
+              sleep 3
+            done
+        ports:
+        - containerPort: 80
+          name: http
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10

@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: workload
+  labels:
+    app: api-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: api
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "API Server starting..."
+
+            REQUEST_COUNT=0
+            CPU_USAGE=50
+
+            while true; do
+              REQUEST_COUNT=$((REQUEST_COUNT + 1))
+
+              # Simulate varying CPU load
+              CPU_USAGE=$((40 + RANDOM % 40))  # 40-80%
+
+              echo "[$(date)] Request #${REQUEST_COUNT} - CPU: ${CPU_USAGE}%"
+
+              # Simulate some work
+              sleep 1
+            done
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10

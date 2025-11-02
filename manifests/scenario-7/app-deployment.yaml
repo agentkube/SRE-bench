@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: cache-system
+  labels:
+    app: web-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: app
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Web Application with Redis client starting..."
+
+            # Simulate Redis connection pool (buggy - doesn't reinitialize on failover)
+            REDIS_HOST="${REDIS_MASTER_HOST}"
+            REDIS_PORT="6379"
+            POOL_SIZE=10
+            ACTIVE_CONNECTIONS=0
+
+            echo "Initial Redis connection pool:"
+            echo "  Host: ${REDIS_HOST}"
+            echo "  Pool size: ${POOL_SIZE}"
+            echo "  Active connections: ${ACTIVE_CONNECTIONS}"
+
+            REQUEST_COUNT=0
+
+            while true; do
+              REQUEST_COUNT=$((REQUEST_COUNT + 1))
+
+              # Simulate connection acquisition
+              ACTIVE_CONNECTIONS=$((ACTIVE_CONNECTIONS + 1))
+
+              # Check if we can connect to Redis
+              if timeout 2 nc -zv ${REDIS_HOST} ${REDIS_PORT} 2>&1 | grep -q succeeded; then
+                echo "[$(date)] Request #${REQUEST_COUNT} - Redis OK - Connections: ${ACTIVE_CONNECTIONS}/${POOL_SIZE}"
+                # Release connection
+                ACTIVE_CONNECTIONS=$((ACTIVE_CONNECTIONS - 1))
+              else
+                echo "[$(date)] Request #${REQUEST_COUNT} - Redis FAILED - Connection leaked!"
+                echo "[$(date)] ERROR: Cannot reach Redis at ${REDIS_HOST}:${REDIS_PORT}"
+                echo "[$(date)] BUG: Connection pool not reinitialized after failover"
+                # Connection leaked - not released
+                # Keep incrementing to simulate FD leak
+              fi
+
+              # Simulate FD exhaustion
+              if [ ${ACTIVE_CONNECTIONS} -gt 100 ]; then
+                echo "[$(date)] CRITICAL: Connection pool exhausted!"
+                echo "[$(date)] CRITICAL: File descriptor leak detected"
+                echo "[$(date)] CRITICAL: ${ACTIVE_CONNECTIONS} leaked connections"
+              fi
+
+              sleep 2
+            done
+        env:
+        - name: REDIS_MASTER_HOST
+          value: "redis-master.cache-system.svc.cluster.local"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"  # Can grow due to connection leaks
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10
