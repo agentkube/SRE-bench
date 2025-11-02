@@ -9,13 +9,42 @@
       "name": "SRE Bench",
       "sidebar": [
         {
-          "name": "Getting Started with Scalar",
+          "name": "Getting Started",
           "type": "folder",
           "icon": "rocket",
           "children": [
-            { "path": "docs/guides/quick-start/introduction.md", "type": "page", "name": "Overview" },
-            { "path": "docs/guides/quick-start/details/quickstart.md", "type": "page", "name": "Quickstart" },
-            { "path": "docs/guides/quick-start/details/development.md", "type": "page", "name": "Development" }
+            {
+              "path": "docs/guides/quick-start/introduction.md",
+              "type": "page",
+              "name": "Introduction"
+            },
+            {
+              "path": "docs/guides/quick-start/architecture.md",
+              "type": "page",
+              "name": "Architecture"
+            },
+            {
+              "path": "docs/guides/quick-start/running-scenarios.md",
+              "type": "page",
+              "name": "Running Scenarios"
+            },
+            {
+              "path": "docs/guides/quick-start/contributing.md",
+              "type": "page",
+              "name": "Contributing"
+            }
+          ]
+        },
+        {
+          "name": "Scenarios",
+          "type": "folder",
+          "icon": "warning",
+          "children": [
+            {
+              "path": "scenerio/README.md",
+              "type": "page",
+              "name": "All Scenarios"
+            }
           ]
         }
       ]
