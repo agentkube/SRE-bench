@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-replica
+  namespace: cache-system
+  labels:
+    app: redis
+    role: replica
+spec:
+  containers:
+  - name: redis
+    image: redis:7-alpine
+    ports:
+    - containerPort: 6379
+      name: redis
+    command: ["redis-server"]
+    args:
+    - "--replicaof"
+    - "redis-master.cache-system.svc.cluster.local"
+    - "6379"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-replica
+  namespace: cache-system
+  labels:
+    app: redis
+    role: replica
+spec:
+  selector:
+    app: redis
+    role: replica
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  type: ClusterIP

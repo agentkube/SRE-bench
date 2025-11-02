@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: demo-app
+data:
+  app.env: "production"
+  log.level: "info"
+  feature.flag: "enabled"
+  # NOTE: new.feature is intentionally missing in the Git version
+  # This represents the stale configuration that hasn't been updated

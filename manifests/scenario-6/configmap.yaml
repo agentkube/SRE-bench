@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: app-prod
+data:
+  # This configmap has been updated for v1.2.1-hotfix
+  # It includes the NEW_FEATURE_FLAG required by v1.2.1-hotfix
+  app.env: "production"
+  log.level: "info"
+  new.feature.flag: "enabled"  # Added in v1.2.1-hotfix
+  database.url: "postgres://db.prod.svc:5432"

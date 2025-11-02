@@ -1,0 +1,127 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: api-service
+  namespace: canary-demo
+  labels:
+    app: api-service
+spec:
+  replicas: 5
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: api-service
+  template:
+    metadata:
+      labels:
+        app: api-service
+        version: stable
+    spec:
+      containers:
+      - name: api
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "API Service starting..."
+            echo "Version: STABLE (v1.0)"
+            echo "DB Schema: v1 (production)"
+
+            REQUEST_COUNT=0
+            SUCCESS_COUNT=0
+            ERROR_COUNT=0
+
+            while true; do
+              REQUEST_COUNT=$((REQUEST_COUNT + 1))
+
+              # Stable version works with production schema
+              echo "[$(date)] Request #${REQUEST_COUNT} - Status: SUCCESS - Schema: v1"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+
+              echo "Stats: Total=${REQUEST_COUNT}, Success=${SUCCESS_COUNT}, Errors=${ERROR_COUNT}, Error Rate=0%"
+
+              sleep 2
+            done
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: metrics
+          containerPort: 9090
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  strategy:
+    canary:
+      # MISCONFIGURED: Weight should be 10% but is set to 100%
+      # This will send ALL traffic to the canary instead of gradual rollout
+      canaryService: api-service-canary
+      stableService: api-service-stable
+      trafficRouting:
+        # No service mesh, using pod labels
+        managedRoutes:
+        - name: primary
+      steps:
+      # BUG: First step sends 100% traffic to canary immediately
+      - setWeight: 100  # WRONG! Should be 10
+        pause:
+          duration: 30s
+      - setWeight: 50
+        pause:
+          duration: 30s
+      - setWeight: 100
+        pause:
+          duration: 30s
+      analysis:
+        templates:
+        - templateName: success-rate
+        startingStep: 1
+        args:
+        - name: service-name
+          value: api-service
+---
+# Canary version with schema incompatibility
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: canary-version
+  namespace: canary-demo
+data:
+  VERSION: "CANARY (v2.0)"
+  SCHEMA: "v2 (NEW - INCOMPATIBLE)"
+  ARGS: |
+    echo "API Service starting..."
+    echo "Version: CANARY (v2.0)"
+    echo "DB Schema: v2 (NEW - INCOMPATIBLE with v1 data)"
+
+    REQUEST_COUNT=0
+    SUCCESS_COUNT=0
+    ERROR_COUNT=0
+
+    while true; do
+      REQUEST_COUNT=$((REQUEST_COUNT + 1))
+
+      # Canary version expects v2 schema, but production data is v1
+      # This causes validation failures
+      echo "[$(date)] Request #${REQUEST_COUNT} - Status: ERROR - Schema mismatch!"
+      echo "[$(date)] ERROR: Expected schema v2, got v1"
+      echo "[$(date)] ERROR: Field 'user_id' not found (renamed to 'userId' in v2)"
+      echo "[$(date)] ERROR: Validation failed: incompatible data format"
+      ERROR_COUNT=$((ERROR_COUNT + 1))
+
+      ERROR_RATE=$((ERROR_COUNT * 100 / REQUEST_COUNT))
+      echo "Stats: Total=${REQUEST_COUNT}, Success=${SUCCESS_COUNT}, Errors=${ERROR_COUNT}, Error Rate=${ERROR_RATE}%"
+
+      sleep 2
+    done

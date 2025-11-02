@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: production
+  labels:
+    app: web-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: app
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Web Application starting..."
+            echo "Replica: ${HOSTNAME}"
+
+            COUNTER=0
+            while true; do
+              COUNTER=$((COUNTER + 1))
+
+              # Simulate some CPU work for HPA metrics
+              if [ $((COUNTER % 3)) -eq 0 ]; then
+                dd if=/dev/zero of=/dev/null bs=1M count=5 2>/dev/null &
+              fi
+
+              echo "[$(date)] ${HOSTNAME} - Request #${COUNTER} processed"
+              sleep 2
+            done
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'Request' > /dev/null"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'sleep' > /dev/null"
+          initialDelaySeconds: 10
+          periodSeconds: 10
