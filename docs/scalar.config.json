@@ -9,9 +9,9 @@
           "type": "folder",
           "icon": "rocket",
           "children": [
-            { "path": "guides/quick-start/introduction.md", "type": "page", "name": "Overview" },
-            { "path": "guides/quick-start/details/quickstart.md", "type": "page", "name": "Quickstart" },
-            { "path": "guides/quick-start/details/development.md", "type": "page", "name": "Development" }
+            { "path": "docs/guides/quick-start/introduction.md", "type": "page", "name": "Overview" },
+            { "path": "docs/guides/quick-start/details/quickstart.md", "type": "page", "name": "Quickstart" },
+            { "path": "docs/guides/quick-start/details/development.md", "type": "page", "name": "Development" }
           ]
         }
       ]
