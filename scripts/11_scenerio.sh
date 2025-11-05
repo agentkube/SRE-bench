@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Scenario 11: ArgoCD Drift ’ Secret Mismatch ’ DB Connection Leak${NC}"
-echo -e "${BLUE}           ’ Node Pressure ’ Prometheus Throttle ’ Alert Delays${NC}"
+echo -e "${BLUE}  Scenario 11: ArgoCD Drift -> Secret Mismatch -> DB Connection Leak${NC}"
+echo -e "${BLUE}           -> Node Pressure -> Prometheus Throttle -> Alert Delays${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Function to check if a command exists
@@ -564,12 +564,12 @@ echo -e "${RED} Alertmanager alerts delayed by 15+ minutes${NC}"
 echo -e "${RED} False sense of cluster health (dashboards stale)${NC}"
 
 echo -e "\n${YELLOW}=== Propagation Chain (6 Levels) ===${NC}"
-echo "1ã  ArgoCD Drift: Manual hotfix changed DB_PASSWORD in Secret"
-echo "2ã  Secret Mismatch: App restarts can't connect to DB (wrong credentials)"
-echo "3ã  DB Connection Leak: Connection pool retries infinitely ’ Postgres refusing connections"
-echo "4ã  Node Pressure: App pods consume CPU/memory ’ Kubelet OOM kills other pods"
-echo "5ã  Prometheus Throttle: Kubelet /metrics returns 500s ’ scrape failures"
-echo "6ã  Alert Delays: Alert thresholds missed ’ high latency alerts 15 min late"
+echo "1->  ArgoCD Drift: Manual hotfix changed DB_PASSWORD in Secret"
+echo "2->  Secret Mismatch: App restarts can't connect to DB (wrong credentials)"
+echo "3->  DB Connection Leak: Connection pool retries infinitely -> Postgres refusing connections"
+echo "4->  Node Pressure: App pods consume CPU/memory -> Kubelet OOM kills other pods"
+echo "5->  Prometheus Throttle: Kubelet /metrics returns 500s -> scrape failures"
+echo "6->  Alert Delays: Alert thresholds missed -> high latency alerts 15 min late"
 
 echo -e "\n${YELLOW}=== Detection Signals ===${NC}"
 echo " ArgoCD drift warnings (OutOfSync status)"
@@ -630,8 +630,8 @@ echo "" Monitor database connection pool metrics"
 echo "" Set up Kubelet health monitoring and alerting"
 
 echo -e "\n${GREEN}=== Scenario 11 Complete ===${NC}"
-echo "This demonstrates: ArgoCD Drift ’ Secret Mismatch ’ DB Connection Leak"
-echo "                  ’ Node Pressure ’ Prometheus Throttle ’ Alert Delays"
+echo "This demonstrates: ArgoCD Drift -> Secret Mismatch -> DB Connection Leak"
+echo "                  -> Node Pressure -> Prometheus Throttle -> Alert Delays"
 echo ""
 echo -e "${YELLOW}Cluster Information:${NC}"
 if [ "$SKIP_SETUP" = false ]; then

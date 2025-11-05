@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Scenario 16: Kube-API Slowdown → Prometheus Scrape Failures${NC}"
-echo -e "${BLUE}    → Alert Silencing → Cost Anomaly → Cluster Node Eviction → App Downtime${NC}"
+echo -e "${BLUE}  Scenario 16: Kube-API Slowdown -> Prometheus Scrape Failures${NC}"
+echo -e "${BLUE}    -> Alert Silencing -> Cost Anomaly -> Cluster Node Eviction -> App Downtime${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Function to check if a command exists
@@ -65,7 +65,7 @@ if [ "$SKIP_SETUP" = false ]; then
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/setup.sh"
     else
-        echo -e "${GREEN}✓ kind is installed${NC}"
+        echo -e "${GREEN}-> kind is installed${NC}"
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/setup.sh" "scenario-16-cluster"
     fi
@@ -96,14 +96,14 @@ if ! kubectl cluster-info &>/dev/null; then
     echo -e "${RED}Error: Cannot access Kubernetes cluster${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Cluster access verified${NC}"
+echo -e "${GREEN}-> Cluster access verified${NC}"
 kubectl get nodes
 
 # Create namespaces
 echo -e "\n${YELLOW}=== Creating Namespaces ===${NC}"
 kubectl create namespace app --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-echo -e "${GREEN}✓ Namespaces created${NC}"
+echo -e "${GREEN}-> Namespaces created${NC}"
 
 # Simulate etcd (showing healthy state initially)
 echo -e "\n${YELLOW}=== Simulating etcd (Control Plane Storage) ===${NC}"
@@ -126,7 +126,7 @@ data:
     Cluster Health: OK
 EOF
 
-echo -e "${GREEN}✓ etcd healthy (initial state)${NC}"
+echo -e "${GREEN}-> etcd healthy (initial state)${NC}"
 
 # Install kube-state-metrics
 echo -e "\n${YELLOW}=== Installing kube-state-metrics ===${NC}"
@@ -175,7 +175,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/kube-state-metrics -n kube-system 2>/dev/null || echo "kube-state-metrics taking longer..."
-echo -e "${GREEN}✓ kube-state-metrics installed${NC}"
+echo -e "${GREEN}-> kube-state-metrics installed${NC}"
 
 # Install Prometheus & Alertmanager
 echo -e "\n${YELLOW}=== Installing Prometheus & Alertmanager ===${NC}"
@@ -286,7 +286,7 @@ EOF
 
 kubectl wait --for=condition=Available --timeout=120s deployment/prometheus -n monitoring 2>/dev/null || echo "Prometheus taking longer..."
 kubectl wait --for=condition=Available --timeout=120s deployment/alertmanager -n monitoring 2>/dev/null || echo "Alertmanager taking longer..."
-echo -e "${GREEN}✓ Monitoring stack installed${NC}"
+echo -e "${GREEN}-> Monitoring stack installed${NC}"
 
 # Deploy cost monitoring agent
 echo -e "\n${YELLOW}=== Deploying Cost Monitoring Agent ===${NC}"
@@ -327,7 +327,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/cost-monitor -n monitoring 2>/dev/null || echo "Cost monitor taking longer..."
-echo -e "${GREEN}✓ Cost monitoring agent deployed${NC}"
+echo -e "${GREEN}-> Cost monitoring agent deployed${NC}"
 
 # Deploy application with HPA
 echo -e "\n${YELLOW}=== Deploying Application with HPA ===${NC}"
@@ -404,7 +404,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=120s deployment/web-app -n app 2>/dev/null || echo "Application taking longer..."
-echo -e "${GREEN}✓ Application with HPA deployed${NC}"
+echo -e "${GREEN}-> Application with HPA deployed${NC}"
 
 # Show initial healthy state
 echo -e "\n${BLUE}=== Initial Healthy State ===${NC}"
@@ -413,12 +413,12 @@ kubectl get pods -n monitoring
 kubectl get pods -n kube-system | grep -E "kube-state|etcd"
 
 echo -e "\n${YELLOW}System Health:${NC}"
-echo "✓ etcd: Healthy (fsync: 8ms)"
-echo "✓ kube-apiserver: Responsive (<50ms)"
-echo "✓ kube-state-metrics: Running"
-echo "✓ Prometheus: Scraping successfully"
-echo "✓ HPA: Active, metrics available"
-echo "✓ Cost monitor: Polling normally"
+echo "-> etcd: Healthy (fsync: 8ms)"
+echo "-> kube-apiserver: Responsive (<50ms)"
+echo "-> kube-state-metrics: Running"
+echo "-> Prometheus: Scraping successfully"
+echo "-> HPA: Active, metrics available"
+echo "-> Cost monitor: Polling normally"
 
 # TRIGGER: etcd I/O Latency Spike
 echo -e "\n${RED}=== TRIGGER: etcd I/O Latency Spike (Cloud Disk Throttling) ===${NC}"
@@ -449,8 +449,8 @@ data:
     Impact: All API requests delayed
 EOF
 
-echo -e "${RED}✗ etcd fsync duration: 8ms → 2,847ms (355x slower)${NC}"
-echo -e "${RED}✗ Cloud disk I/O throttled (burst credits exhausted)${NC}"
+echo -e "${RED}-> etcd fsync duration: 8ms -> 2,847ms (355x slower)${NC}"
+echo -e "${RED}-> Cloud disk I/O throttled (burst credits exhausted)${NC}"
 
 # Step 1: Kube-API Slowdown
 echo -e "\n${BLUE}=== Step 1: Kube-API Slowdown ===${NC}"
@@ -767,52 +767,52 @@ kubectl get pods -n monitoring 2>/dev/null | head -10
 kubectl get nodes
 
 echo -e "\n${YELLOW}System Health:${NC}"
-echo "✗ etcd: DEGRADED (fsync: 2,847ms)"
-echo "✗ kube-apiserver: SLOW (latency: >2s)"
-echo "✗ kube-state-metrics: DOWN (timeout)"
-echo "✗ Prometheus: FAILING (scrapes timeout)"
-echo "✗ Alertmanager: SILENCING (no data)"
-echo "✗ HPA: UNABLE TO COMPUTE (no metrics)"
-echo "✗ Cost monitor: QUOTA EXCEEDED (429 errors)"
-echo "✗ Nodes: PRESSURE (disk & memory)"
-echo "✗ Application: DOWN (67% error rate)"
+echo "-> etcd: DEGRADED (fsync: 2,847ms)"
+echo "-> kube-apiserver: SLOW (latency: >2s)"
+echo "-> kube-state-metrics: DOWN (timeout)"
+echo "-> Prometheus: FAILING (scrapes timeout)"
+echo "-> Alertmanager: SILENCING (no data)"
+echo "-> HPA: UNABLE TO COMPUTE (no metrics)"
+echo "-> Cost monitor: QUOTA EXCEEDED (429 errors)"
+echo "-> Nodes: PRESSURE (disk & memory)"
+echo "-> Application: DOWN (67% error rate)"
 
 echo -e "\n${RED}=== Incident Summary ===${NC}"
-echo -e "${RED}✗ etcd I/O latency spike (8ms → 2,847ms)${NC}"
-echo -e "${RED}✗ Cloud disk throttling (burst credits exhausted)${NC}"
-echo -e "${RED}✗ kube-apiserver slow (P99: 6,847ms)${NC}"
-echo -e "${RED}✗ Prometheus scrapes timeout (kube-state-metrics DOWN)${NC}"
-echo -e "${RED}✗ Missing pod/node metrics for 4-5 minutes${NC}"
-echo -e "${RED}✗ Alertmanager silencing all alerts (no data)${NC}"
-echo -e "${RED}✗ HPA unable to compute replicas (scales to minReplicas)${NC}"
-echo -e "${RED}✗ Cost monitor retry storm (12,847 API calls → quota exceeded)${NC}"
-echo -e "${RED}✗ Node disk/memory pressure (DiskPressure, MemoryPressure)${NC}"
-echo -e "${RED}✗ Pod evictions (2/3 app pods evicted mid-transaction)${NC}"
-echo -e "${RED}✗ Application downtime (67% error rate)${NC}"
-echo -e "${RED}✗ No alerts fired (monitoring unreliable)${NC}"
-echo -e "${RED}✗ Misdiagnosed as HPA regression (actual: infrastructure)${NC}"
+echo -e "${RED}-> etcd I/O latency spike (8ms -> 2,847ms)${NC}"
+echo -e "${RED}-> Cloud disk throttling (burst credits exhausted)${NC}"
+echo -e "${RED}-> kube-apiserver slow (P99: 6,847ms)${NC}"
+echo -e "${RED}-> Prometheus scrapes timeout (kube-state-metrics DOWN)${NC}"
+echo -e "${RED}-> Missing pod/node metrics for 4-5 minutes${NC}"
+echo -e "${RED}-> Alertmanager silencing all alerts (no data)${NC}"
+echo -e "${RED}-> HPA unable to compute replicas (scales to minReplicas)${NC}"
+echo -e "${RED}-> Cost monitor retry storm (12,847 API calls -> quota exceeded)${NC}"
+echo -e "${RED}-> Node disk/memory pressure (DiskPressure, MemoryPressure)${NC}"
+echo -e "${RED}-> Pod evictions (2/3 app pods evicted mid-transaction)${NC}"
+echo -e "${RED}-> Application downtime (67% error rate)${NC}"
+echo -e "${RED}-> No alerts fired (monitoring unreliable)${NC}"
+echo -e "${RED}-> Misdiagnosed as HPA regression (actual: infrastructure)${NC}"
 
 echo -e "\n${YELLOW}=== Propagation Chain (6 Levels) ===${NC}"
-echo "1️⃣  etcd Latency: API responses slow (>2s) due to disk throttling"
-echo "2️⃣  Prometheus Scrape Failures: kube-state-metrics timeout → missing metrics"
-echo "3️⃣  Alert Silencing: Alertmanager suppresses alerts (data incomplete)"
-echo "4️⃣  Autoscaler Fails: HPA sees 'no metrics' → scales to minReplicas"
-echo "5️⃣  Cost Anomaly: Cost monitor retry storm → hits cloud API quota"
-echo "6️⃣  Node Eviction: Disk/memory pressure → pods evicted → service down"
+echo "1->  etcd Latency: API responses slow (>2s) due to disk throttling"
+echo "2->  Prometheus Scrape Failures: kube-state-metrics timeout -> missing metrics"
+echo "3->  Alert Silencing: Alertmanager suppresses alerts (data incomplete)"
+echo "4->  Autoscaler Fails: HPA sees 'no metrics' -> scales to minReplicas"
+echo "5->  Cost Anomaly: Cost monitor retry storm -> hits cloud API quota"
+echo "6->  Node Eviction: Disk/memory pressure -> pods evicted -> service down"
 
 echo -e "\n${YELLOW}=== Detection Signals ===${NC}"
-echo "✓ etcd high latency warnings (fsync duration >100ms)"
-echo "✓ Kube-apiserver slow request logs"
-echo "✓ Prometheus scrape timeout errors"
-echo "✓ kube-state-metrics unavailability"
-echo "✓ HPA showing 'unable to fetch metrics'"
-echo "✓ Alertmanager silence events"
-echo "✓ Unexpected scale-down events"
-echo "✓ Cloud API throttling (429 errors)"
-echo "✓ Node pressure events (DiskPressure, MemoryPressure)"
-echo "✓ Pod eviction events"
-echo "✓ Disk I/O throttling metrics (cloud provider)"
-echo "✓ User-reported errors (first indicator)"
+echo "-> etcd high latency warnings (fsync duration >100ms)"
+echo "-> Kube-apiserver slow request logs"
+echo "-> Prometheus scrape timeout errors"
+echo "-> kube-state-metrics unavailability"
+echo "-> HPA showing 'unable to fetch metrics'"
+echo "-> Alertmanager silence events"
+echo "-> Unexpected scale-down events"
+echo "-> Cloud API throttling (429 errors)"
+echo "-> Node pressure events (DiskPressure, MemoryPressure)"
+echo "-> Pod eviction events"
+echo "-> Disk I/O throttling metrics (cloud provider)"
+echo "-> User-reported errors (first indicator)"
 
 echo -e "\n${YELLOW}=== Remediation Steps ===${NC}"
 echo "To fix this cascading failure:"
@@ -852,27 +852,27 @@ echo "   # Adjust etcd memory limits, snapshot intervals"
 echo "   # Consider etcd defragmentation"
 
 echo -e "\n${YELLOW}=== Prevention Measures ===${NC}"
-echo "• Monitor etcd performance metrics (disk latency, fsync duration)"
-echo "• Use high-performance storage for etcd (SSD, provisioned IOPS)"
-echo "• Set baseline IOPS to avoid burst credit exhaustion"
-echo "• Implement etcd disk I/O alerts (fsync >100ms)"
-echo "• Optimize kube-apiserver configuration and rate limits"
-echo "• Use Prometheus federation/sharding to reduce API load"
-echo "• Configure HPA evaluation intervals and fallback behavior"
-echo "• Implement rate limiting on cost monitoring tools"
-echo "• Set PodDisruptionBudgets to prevent excessive evictions"
-echo "• Use node affinity to isolate critical workloads"
-echo "• Regular etcd performance testing and capacity planning"
-echo "• Monitor cloud resource quotas and set up alerts"
-echo "• Implement graceful degradation for metrics unavailability"
-echo "• Use etcd compaction and defragmentation schedules"
-echo "• Set up synthetic monitoring (doesn't rely on Prometheus)"
-echo "• Configure separate monitoring for infrastructure health"
-echo "• Implement etcd backup and recovery procedures"
+echo "-> Monitor etcd performance metrics (disk latency, fsync duration)"
+echo "-> Use high-performance storage for etcd (SSD, provisioned IOPS)"
+echo "-> Set baseline IOPS to avoid burst credit exhaustion"
+echo "-> Implement etcd disk I/O alerts (fsync >100ms)"
+echo "-> Optimize kube-apiserver configuration and rate limits"
+echo "-> Use Prometheus federation/sharding to reduce API load"
+echo "-> Configure HPA evaluation intervals and fallback behavior"
+echo "-> Implement rate limiting on cost monitoring tools"
+echo "-> Set PodDisruptionBudgets to prevent excessive evictions"
+echo "-> Use node affinity to isolate critical workloads"
+echo "-> Regular etcd performance testing and capacity planning"
+echo "-> Monitor cloud resource quotas and set up alerts"
+echo "-> Implement graceful degradation for metrics unavailability"
+echo "-> Use etcd compaction and defragmentation schedules"
+echo "-> Set up synthetic monitoring (doesn't rely on Prometheus)"
+echo "-> Configure separate monitoring for infrastructure health"
+echo "-> Implement etcd backup and recovery procedures"
 
 echo -e "\n${GREEN}=== Scenario 16 Complete ===${NC}"
-echo "This demonstrates: Kube-API Slowdown → Prometheus Scrape Failures"
-echo "                  → Alert Silencing → Cost Anomaly → Node Eviction → App Downtime"
+echo "This demonstrates: Kube-API Slowdown -> Prometheus Scrape Failures"
+echo "                  -> Alert Silencing -> Cost Anomaly -> Node Eviction -> App Downtime"
 echo ""
 echo -e "${YELLOW}Cluster Information:${NC}"
 if [ "$SKIP_SETUP" = false ]; then
@@ -883,10 +883,10 @@ else
 fi
 echo ""
 echo -e "${YELLOW}Key Learnings:${NC}"
-echo "• Infrastructure bottlenecks (etcd) cause cascading control plane failures"
-echo "• Monitoring systems fail when dependent on unhealthy infrastructure"
-echo "• Alert silencing creates dangerous blind spots during incidents"
-echo "• Misdiagnosis is common when root cause is hidden (blamed HPA)"
-echo "• Cloud resource quotas can amplify failures through retry storms"
-echo "• Multiple systems fail simultaneously from single root cause"
-echo "• Detection relies on user reports when monitoring is unreliable"
+echo "-> Infrastructure bottlenecks (etcd) cause cascading control plane failures"
+echo "-> Monitoring systems fail when dependent on unhealthy infrastructure"
+echo "-> Alert silencing creates dangerous blind spots during incidents"
+echo "-> Misdiagnosis is common when root cause is hidden (blamed HPA)"
+echo "-> Cloud resource quotas can amplify failures through retry storms"
+echo "-> Multiple systems fail simultaneously from single root cause"
+echo "-> Detection relies on user reports when monitoring is unreliable"

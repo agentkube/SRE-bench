@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Scenario 13: NetworkPolicy Restriction → Service Mesh Retry Storm${NC}"
-echo -e "${BLUE}      → DB Saturation → Prometheus Lag → Alert Suppression → Partial Outage${NC}"
+echo -e "${BLUE}  Scenario 13: NetworkPolicy Restriction -> Service Mesh Retry Storm${NC}"
+echo -e "${BLUE}      -> DB Saturation -> Prometheus Lag -> Alert Suppression -> Partial Outage${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Function to check if a command exists
@@ -66,7 +66,7 @@ if [ "$SKIP_SETUP" = false ]; then
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/setup.sh"
     else
-        echo -e "${GREEN}✓ kind is installed${NC}"
+        echo -e "${GREEN}-> kind is installed${NC}"
 
         # Create cluster using setup script
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -101,7 +101,7 @@ if ! kubectl cluster-info &>/dev/null; then
     echo -e "${RED}Error: Cannot access Kubernetes cluster${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Cluster access verified${NC}"
+echo -e "${GREEN}-> Cluster access verified${NC}"
 kubectl get nodes
 
 # Create namespaces
@@ -111,7 +111,7 @@ kubectl label namespace frontend name=frontend --overwrite
 kubectl create namespace backend --dry-run=client -o yaml | kubectl apply -f -
 kubectl label namespace backend name=backend --overwrite
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-echo -e "${GREEN}✓ Namespaces created${NC}"
+echo -e "${GREEN}-> Namespaces created${NC}"
 
 # Install Prometheus and Alertmanager
 echo -e "\n${YELLOW}=== Installing Prometheus & Alertmanager ===${NC}"
@@ -221,7 +221,7 @@ EOF
 echo "Waiting for monitoring stack to be ready..."
 kubectl wait --for=condition=Available --timeout=120s deployment/prometheus -n monitoring 2>/dev/null || echo "Prometheus taking longer..."
 kubectl wait --for=condition=Available --timeout=120s deployment/alertmanager -n monitoring 2>/dev/null || echo "Alertmanager taking longer..."
-echo -e "${GREEN}✓ Monitoring stack installed${NC}"
+echo -e "${GREEN}-> Monitoring stack installed${NC}"
 
 # Deploy PostgreSQL database in backend namespace
 echo -e "\n${YELLOW}=== Deploying PostgreSQL Database ===${NC}"
@@ -287,7 +287,7 @@ EOF
 
 echo "Waiting for database..."
 kubectl wait --for=condition=Available --timeout=60s deployment/auth-db -n backend 2>/dev/null || echo "Database taking longer..."
-echo -e "${GREEN}✓ Database deployed${NC}"
+echo -e "${GREEN}-> Database deployed${NC}"
 
 # Deploy Auth Service
 echo -e "\n${YELLOW}=== Deploying Auth Service ===${NC}"
@@ -347,7 +347,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/auth-service -n backend 2>/dev/null || echo "Auth service taking longer..."
-echo -e "${GREEN}✓ Auth service deployed${NC}"
+echo -e "${GREEN}-> Auth service deployed${NC}"
 
 # Deploy API Gateway with Istio sidecar
 echo -e "\n${YELLOW}=== Deploying API Gateway (with Istio Sidecar) ===${NC}"
@@ -409,7 +409,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/api-gateway -n frontend 2>/dev/null || echo "Gateway taking longer..."
-echo -e "${GREEN}✓ API gateway deployed${NC}"
+echo -e "${GREEN}-> API gateway deployed${NC}"
 
 # Create initial OPEN NetworkPolicy
 echo -e "\n${YELLOW}=== Creating Initial NetworkPolicy (OPEN) ===${NC}"
@@ -430,7 +430,7 @@ spec:
     - namespaceSelector: {}
 EOF
 
-echo -e "${GREEN}✓ Initial NetworkPolicy applied (allows cross-namespace)${NC}"
+echo -e "${GREEN}-> Initial NetworkPolicy applied (allows cross-namespace)${NC}"
 
 # Show initial state
 echo -e "\n${BLUE}=== Initial Healthy State ===${NC}"
@@ -438,7 +438,7 @@ kubectl get pods -n frontend
 kubectl get pods -n backend
 kubectl get networkpolicy -n backend
 
-echo -e "\n${YELLOW}Connectivity: frontend → backend: ALLOWED${NC}"
+echo -e "\n${YELLOW}Connectivity: frontend -> backend: ALLOWED${NC}"
 sleep 3
 
 # TRIGGER
@@ -463,14 +463,14 @@ spec:
     - podSelector: {}
 EOF
 
-echo -e "${RED}✗ NetworkPolicy: Cross-namespace traffic BLOCKED${NC}"
+echo -e "${RED}-> NetworkPolicy: Cross-namespace traffic BLOCKED${NC}"
 
 # Continue with remaining steps...
 echo -e "\n${BLUE}=== Step 1: NetworkPolicy Restriction ===${NC}"
-echo "✗ frontend → backend: BLOCKED"
+echo "-> frontend -> backend: BLOCKED"
 
 echo -e "\n${BLUE}=== Step 2: Service Mesh Retry Storm ===${NC}"
-echo "Istio retries: 5x per request → Traffic amplification"
+echo "Istio retries: 5x per request -> Traffic amplification"
 
 echo -e "\n${BLUE}=== Step 3: DB Saturation ===${NC}"
 echo "Database connections: 98/100 (CRITICAL)"
@@ -486,12 +486,12 @@ echo "Users unable to login (100% failure)"
 echo "Monitoring: GREEN (false negative)"
 
 echo -e "\n${RED}=== Incident Summary ===${NC}"
-echo -e "${RED}✗ NetworkPolicy blocks cross-namespace traffic${NC}"
-echo -e "${RED}✗ Istio retry storm: 5x amplification${NC}"
-echo -e "${RED}✗ Database pool exhausted: 98/100${NC}"
-echo -e "${RED}✗ Prometheus metrics stale: 2+ min${NC}"
-echo -e "${RED}✗ No alerts fired (observability blind spot)${NC}"
-echo -e "${RED}✗ Users cannot login - detected via support tickets${NC}"
+echo -e "${RED}-> NetworkPolicy blocks cross-namespace traffic${NC}"
+echo -e "${RED}-> Istio retry storm: 5x amplification${NC}"
+echo -e "${RED}-> Database pool exhausted: 98/100${NC}"
+echo -e "${RED}-> Prometheus metrics stale: 2+ min${NC}"
+echo -e "${RED}-> No alerts fired (observability blind spot)${NC}"
+echo -e "${RED}-> Users cannot login - detected via support tickets${NC}"
 
 echo -e "\n${GREEN}=== Scenario 13 Complete ===${NC}"
 echo "This demonstrates the observability blind spot problem"

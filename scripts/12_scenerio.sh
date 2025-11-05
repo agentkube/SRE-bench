@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Scenario 12: Misconfigured HPA ’ Cost Spike ’ Cluster Autoscaler${NC}"
-echo -e "${BLUE}         ’ Throttled API ’ ArgoCD Sync Failure ’ Alertmanager Storm${NC}"
+echo -e "${BLUE}  Scenario 12: Misconfigured HPA -> Cost Spike -> Cluster Autoscaler${NC}"
+echo -e "${BLUE}         -> Throttled API -> ArgoCD Sync Failure -> Alertmanager Storm${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Function to check if a command exists
@@ -384,7 +384,7 @@ kubectl wait --for=condition=Available --timeout=60s deployment/cost-monitor -n 
 echo -e "${GREEN} Cost monitoring agent deployed${NC}"
 
 # TRIGGER: Misconfigure HPA to 5% CPU target
-echo -e "\n${RED}=== TRIGGER: Misconfiguring HPA (70% ’ 5% CPU target) ===${NC}"
+echo -e "\n${RED}=== TRIGGER: Misconfiguring HPA (70% -> 5% CPU target) ===${NC}"
 echo "Simulating: Platform engineer accidentally sets HPA target to 5%"
 sleep 2
 
@@ -420,7 +420,7 @@ echo -e "${RED} maxReplicas increased to 500 (was 10)${NC}"
 # Step 1: HPA Misfires - Aggressive Scaling
 echo -e "\n${BLUE}=== Step 1: HPA Misfires (Aggressive Scaling) ===${NC}"
 echo "HPA detects CPU usage above 5% threshold..."
-echo "Triggering aggressive scale-up: 3 ’ 500 pods"
+echo "Triggering aggressive scale-up: 3 -> 500 pods"
 sleep 3
 
 # Simulate the scaling by showing HPA status
@@ -433,7 +433,7 @@ kubectl get events -n app --sort-by='.lastTimestamp' | grep -i "horizontal" | ta
 echo -e "\n${YELLOW}Simulating rapid pod scale-up (would reach 500 in ~10 minutes)${NC}"
 for i in {1..3}; do
     CURRENT_PODS=$((3 + i * 30))
-    echo "Wave $i: Replica count ’ ${CURRENT_PODS} pods (target: 500)"
+    echo "Wave $i: Replica count -> ${CURRENT_PODS} pods (target: 500)"
     sleep 2
 done
 
@@ -481,7 +481,7 @@ metadata:
   namespace: monitoring
 data:
   billing: |
-       COST ALERT - CRITICAL
+    ->  COST ALERT - CRITICAL
 
     Cloud Provider: AWS
     Region: us-east-1
@@ -595,7 +595,7 @@ metadata:
   namespace: monitoring
 data:
   alerts: |
-    =¨ ALERTMANAGER - CRITICAL ALERT STORM =¨
+    =-> ALERTMANAGER - CRITICAL ALERT STORM =->
 
     Total Active Alerts: 247
     Firing in last 5 min: 198
@@ -608,7 +608,7 @@ data:
     - Severity: P0
 
     [CRITICAL] HPAScalingAggressive (37 instances)
-    - web-app: 3 ’ 500 replicas in 10 minutes
+    - web-app: 3 -> 500 replicas in 10 minutes
     - Severity: P0
 
     [CRITICAL] ClusterNodeExplosion (28 instances)
@@ -664,9 +664,9 @@ kubectl get configmap apiserver-status -n kube-system -o jsonpath='{.data.metric
 
 echo -e "\n${RED}=== Incident Summary ===${NC}"
 echo -e "${RED} HPA misconfigured: target changed to 5% CPU (was 70%)${NC}"
-echo -e "${RED} Pods scaled from 3 ’ 500 in 10 minutes${NC}"
-echo -e "${RED} Cluster Autoscaler added 100+ nodes (1 ’ 127)${NC}"
-echo -e "${RED} Cloud billing spike: \$12/hour ’ \$1,847/hour${NC}"
+echo -e "${RED} Pods scaled from 3 -> 500 in 10 minutes${NC}"
+echo -e "${RED} Cluster Autoscaler added 100+ nodes (1 -> 127)${NC}"
+echo -e "${RED} Cloud billing spike: \$12/hour -> \$1,847/hour${NC}"
 echo -e "${RED} Projected monthly cost: \$1.3M (was \$8K)${NC}"
 echo -e "${RED} Cost monitoring agent hit AWS API rate limit${NC}"
 echo -e "${RED} kube-apiserver throttled (54% of requests = 429 errors)${NC}"
@@ -676,18 +676,18 @@ echo -e "${RED} Alert fatigue: 142 alerts silenced by engineers${NC}"
 echo -e "${RED} Production instability from partial deployments${NC}"
 
 echo -e "\n${YELLOW}=== Propagation Chain (6 Levels) ===${NC}"
-echo "1ã  HPA Misfires: Pods scale 3 ’ 500 in 10 min (5% CPU threshold)"
-echo "2ã  Cluster Autoscaler: Adds 100+ nodes in AWS/GCP"
-echo "3ã  Cloud Billing Surge: Cost agent hits API rate limit"
-echo "4ã  K8s API Throttled: Controller-manager and ArgoCD fail (QPS throttling)"
-echo "5ã  ArgoCD Drift: Sync status 'Unknown' ’ partial rollouts"
-echo "6ã  Alertmanager Storm: Every HPA, cost, and Argo alert fires"
+echo "1->  HPA Misfires: Pods scale 3 -> 500 in 10 min (5% CPU threshold)"
+echo "2->  Cluster Autoscaler: Adds 100+ nodes in AWS/GCP"
+echo "3->  Cloud Billing Surge: Cost agent hits API rate limit"
+echo "4->  K8s API Throttled: Controller-manager and ArgoCD fail (QPS throttling)"
+echo "5->  ArgoCD Drift: Sync status 'Unknown' -> partial rollouts"
+echo "6->  Alertmanager Storm: Every HPA, cost, and Argo alert fires"
 
 echo -e "\n${YELLOW}=== Detection Signals ===${NC}"
-echo " Abnormal replica count increase (3 ’ 500+ pods)"
-echo " Node count explosion (1 ’ 127 nodes)"
+echo " Abnormal replica count increase (3 -> 500+ pods)"
+echo " Node count explosion (1 -> 127 nodes)"
 echo " Cloud API throttling errors (429 responses)"
-echo " Massive cost anomaly (\$8K/month ’ \$1.3M/month projected)"
+echo " Massive cost anomaly (\$8K/month -> \$1.3M/month projected)"
 echo " kube-apiserver high latency (2.4s) and QPS throttling"
 echo " ArgoCD sync failures and 'Unknown' status"
 echo " Alert storm in Alertmanager (247+ firing alerts)"
@@ -753,8 +753,8 @@ echo "" Implement progressive rollout of infrastructure changes"
 echo "" Set up cost anomaly detection with auto-response"
 
 echo -e "\n${GREEN}=== Scenario 12 Complete ===${NC}"
-echo "This demonstrates: Misconfigured HPA ’ Cost Spike ’ Cluster Autoscaler"
-echo "                  ’ Throttled API ’ ArgoCD Sync Failure ’ Alertmanager Storm"
+echo "This demonstrates: Misconfigured HPA -> Cost Spike -> Cluster Autoscaler"
+echo "                  -> Throttled API -> ArgoCD Sync Failure -> Alertmanager Storm"
 echo ""
 echo -e "${YELLOW}Cluster Information:${NC}"
 if [ "$SKIP_SETUP" = false ]; then

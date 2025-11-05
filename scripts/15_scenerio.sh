@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Scenario 15: Prometheus High Cardinality → TSDB Corruption${NC}"
-echo -e "${BLUE}    → Metrics Drop → Alert Delay → Argo Rollout Overshoot → DB Overload${NC}"
+echo -e "${BLUE}  Scenario 15: Prometheus High Cardinality -> TSDB Corruption${NC}"
+echo -e "${BLUE}    -> Metrics Drop -> Alert Delay -> Argo Rollout Overshoot -> DB Overload${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Function to check if a command exists
@@ -65,7 +65,7 @@ if [ "$SKIP_SETUP" = false ]; then
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/setup.sh"
     else
-        echo -e "${GREEN}✓ kind is installed${NC}"
+        echo -e "${GREEN}-> kind is installed${NC}"
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/setup.sh" "scenario-15-cluster"
     fi
@@ -96,7 +96,7 @@ if ! kubectl cluster-info &>/dev/null; then
     echo -e "${RED}Error: Cannot access Kubernetes cluster${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Cluster access verified${NC}"
+echo -e "${GREEN}-> Cluster access verified${NC}"
 kubectl get nodes
 
 # Create namespaces
@@ -104,14 +104,14 @@ echo -e "\n${YELLOW}=== Creating Namespaces ===${NC}"
 kubectl create namespace app --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace argo-rollouts --dry-run=client -o yaml | kubectl apply -f -
-echo -e "${GREEN}✓ Namespaces created${NC}"
+echo -e "${GREEN}-> Namespaces created${NC}"
 
 # Install Argo Rollouts
 echo -e "\n${YELLOW}=== Installing Argo Rollouts ===${NC}"
 kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
 echo "Waiting for Argo Rollouts..."
 kubectl wait --for=condition=Available --timeout=120s deployment/argo-rollouts -n argo-rollouts 2>/dev/null || echo "Argo Rollouts taking longer..."
-echo -e "${GREEN}✓ Argo Rollouts installed${NC}"
+echo -e "${GREEN}-> Argo Rollouts installed${NC}"
 
 # Install Prometheus with normal cardinality
 echo -e "\n${YELLOW}=== Installing Prometheus ===${NC}"
@@ -224,7 +224,7 @@ EOF
 
 kubectl wait --for=condition=Available --timeout=120s deployment/prometheus -n monitoring 2>/dev/null || echo "Prometheus taking longer..."
 kubectl wait --for=condition=Available --timeout=120s deployment/alertmanager -n monitoring 2>/dev/null || echo "Alertmanager taking longer..."
-echo -e "${GREEN}✓ Prometheus & Alertmanager installed${NC}"
+echo -e "${GREEN}-> Prometheus & Alertmanager installed${NC}"
 
 # Deploy PostgreSQL Database
 echo -e "\n${YELLOW}=== Deploying PostgreSQL Database ===${NC}"
@@ -283,7 +283,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/postgres -n app 2>/dev/null || echo "Database taking longer..."
-echo -e "${GREEN}✓ PostgreSQL deployed${NC}"
+echo -e "${GREEN}-> PostgreSQL deployed${NC}"
 
 # Deploy API application (stable version v1 with normal metrics)
 echo -e "\n${YELLOW}=== Deploying API Application (Stable v1) ===${NC}"
@@ -347,7 +347,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=120s deployment/api-service-stable -n app 2>/dev/null || echo "API taking longer..."
-echo -e "${GREEN}✓ API Service (stable) deployed${NC}"
+echo -e "${GREEN}-> API Service (stable) deployed${NC}"
 
 # Show initial healthy state
 echo -e "\n${BLUE}=== Initial Healthy State ===${NC}"
@@ -419,8 +419,8 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/api-service-canary -n app 2>/dev/null || echo "Canary taking longer..."
-echo -e "${RED}✗ Canary deployed with unbounded user_id label${NC}"
-echo -e "${RED}✗ Metrics endpoint includes dynamic user IDs${NC}"
+echo -e "${RED}-> Canary deployed with unbounded user_id label${NC}"
+echo -e "${RED}-> Metrics endpoint includes dynamic user IDs${NC}"
 
 # Step 1: High-Cardinality Metric
 echo -e "\n${BLUE}=== Step 1: High-Cardinality Metric Explosion ===${NC}"
@@ -453,8 +453,8 @@ data:
     - Unbounded label cardinality
 
     Storage Impact:
-    - Disk usage: 45MB → 8.7GB (193x increase)
-    - Memory usage: 512MB → 2.1GB (4x increase)
+    - Disk usage: 45MB -> 8.7GB (193x increase)
+    - Memory usage: 512MB -> 2.1GB (4x increase)
     - WAL write queue: 847 entries/sec
 EOF
 
@@ -597,7 +597,7 @@ EOF
 kubectl get configmap alert-delays -n monitoring -o jsonpath='{.data.status}'
 
 # Step 5: Argo Rollout Overshoot
-echo -e "\n${BLUE}=== Step 5: Argo Rollout Overshoot (Canary → 100%) ===${NC}"
+echo -e "\n${BLUE}=== Step 5: Argo Rollout Overshoot (Canary -> 100%) ===${NC}"
 echo "Rollout controller reading stale metrics, increasing canary weight..."
 sleep 2
 
@@ -714,38 +714,38 @@ echo "Error rate: 73% (database timeouts)"
 echo "Database CPU: 100%"
 
 echo -e "\n${RED}=== Incident Summary ===${NC}"
-echo -e "${RED}✗ High-cardinality metrics with user_id label${NC}"
-echo -e "${RED}✗ Prometheus time-series exploded: 5K → 2.3M${NC}"
-echo -e "${RED}✗ TSDB WAL overflow, block compaction failed${NC}"
-echo -e "${RED}✗ Critical metrics stale for 8+ minutes${NC}"
-echo -e "${RED}✗ HPA reading outdated metrics (incorrect scale decisions)${NC}"
-echo -e "${RED}✗ Alerts delayed 10-14 minutes (backlog)${NC}"
-echo -e "${RED}✗ Argo Rollout promoted canary to 100% (stale metrics)${NC}"
-echo -e "${RED}✗ Canary has schema bug → DB queries inefficient${NC}"
-echo -e "${RED}✗ Database CPU: 100%, connections: 98/100${NC}"
-echo -e "${RED}✗ API error rate: 73% (user-facing outage)${NC}"
-echo -e "${RED}✗ Monitoring silent during failure (TSDB corrupted)${NC}"
+echo -e "${RED}-> High-cardinality metrics with user_id label${NC}"
+echo -e "${RED}-> Prometheus time-series exploded: 5K -> 2.3M${NC}"
+echo -e "${RED}-> TSDB WAL overflow, block compaction failed${NC}"
+echo -e "${RED}-> Critical metrics stale for 8+ minutes${NC}"
+echo -e "${RED}-> HPA reading outdated metrics (incorrect scale decisions)${NC}"
+echo -e "${RED}-> Alerts delayed 10-14 minutes (backlog)${NC}"
+echo -e "${RED}-> Argo Rollout promoted canary to 100% (stale metrics)${NC}"
+echo -e "${RED}-> Canary has schema bug -> DB queries inefficient${NC}"
+echo -e "${RED}-> Database CPU: 100%, connections: 98/100${NC}"
+echo -e "${RED}-> API error rate: 73% (user-facing outage)${NC}"
+echo -e "${RED}-> Monitoring silent during failure (TSDB corrupted)${NC}"
 
 echo -e "\n${YELLOW}=== Propagation Chain (6 Levels) ===${NC}"
-echo "1️⃣  High-Cardinality Metric: user_id label → millions of time-series"
-echo "2️⃣  TSDB Corruption: WAL overflow, compaction fails"
-echo "3️⃣  Metrics Drop: CPU/memory metrics stale 8+ min"
-echo "4️⃣  Alert Delay: Alertmanager backlog → firing delayed 10+ min"
-echo "5️⃣  Rollout Overshoot: Reads stale metrics → promotes canary to 100%"
-echo "6️⃣  DB Overload: Canary schema bug → DB CPU 100%"
+echo "1->  High-Cardinality Metric: user_id label -> millions of time-series"
+echo "2->  TSDB Corruption: WAL overflow, compaction fails"
+echo "3->  Metrics Drop: CPU/memory metrics stale 8+ min"
+echo "4->  Alert Delay: Alertmanager backlog -> firing delayed 10+ min"
+echo "5->  Rollout Overshoot: Reads stale metrics -> promotes canary to 100%"
+echo "6->  DB Overload: Canary schema bug -> DB CPU 100%"
 
 echo -e "\n${YELLOW}=== Detection Signals ===${NC}"
-echo "✓ Prometheus TSDB corruption errors"
-echo "✓ WAL write failures in Prometheus logs"
-echo "✓ Metrics cardinality explosion (5K → 2.3M series)"
-echo "✓ Prometheus storage usage spike (45MB → 8.7GB)"
-echo "✓ Stale metrics in queries"
-echo "✓ HPA showing outdated metric values"
-echo "✓ Argo Rollout events showing unexpected weight changes"
-echo "✓ Database CPU saturation (100%)"
-echo "✓ Alert delivery delays in Alertmanager"
-echo "✓ API error rate spike"
-echo "✓ Database slow query logs"
+echo "-> Prometheus TSDB corruption errors"
+echo "-> WAL write failures in Prometheus logs"
+echo "-> Metrics cardinality explosion (5K -> 2.3M series)"
+echo "-> Prometheus storage usage spike (45MB -> 8.7GB)"
+echo "-> Stale metrics in queries"
+echo "-> HPA showing outdated metric values"
+echo "-> Argo Rollout events showing unexpected weight changes"
+echo "-> Database CPU saturation (100%)"
+echo "-> Alert delivery delays in Alertmanager"
+echo "-> API error rate spike"
+echo "-> Database slow query logs"
 
 echo -e "\n${YELLOW}=== Remediation Steps ===${NC}"
 echo "To fix this cascading failure:"
@@ -782,26 +782,26 @@ echo "8. Monitor recovery:"
 echo "   kubectl logs -n monitoring -l app=prometheus -f"
 
 echo -e "\n${YELLOW}=== Prevention Measures ===${NC}"
-echo "• Monitor Prometheus cardinality and series count"
-echo "• Implement metric relabeling rules to limit cardinality"
-echo "• Set cardinality limits in instrumentation libraries"
-echo "• Use metric label allowlists (only allow specific labels)"
-echo "• Regular Prometheus performance reviews"
-echo "• Implement TSDB storage monitoring and alerts"
-echo "• Use metric naming conventions avoiding dynamic labels"
-echo "• Configure Prometheus retention policies appropriately"
-echo "• Implement progressive delivery safeguards (small canary weights)"
-echo "• Add Argo Rollout analysis templates with strict thresholds"
-echo "• Use database connection pooling and query timeouts"
-echo "• Test new instrumentation in staging first"
-echo "• Review metrics cardinality before production deployment"
-echo "• Set up Prometheus TSDB health alerts"
-echo "• Use metric aggregation for high-cardinality data"
-echo "• Implement query performance monitoring on database"
+echo "-> Monitor Prometheus cardinality and series count"
+echo "-> Implement metric relabeling rules to limit cardinality"
+echo "-> Set cardinality limits in instrumentation libraries"
+echo "-> Use metric label allowlists (only allow specific labels)"
+echo "-> Regular Prometheus performance reviews"
+echo "-> Implement TSDB storage monitoring and alerts"
+echo "-> Use metric naming conventions avoiding dynamic labels"
+echo "-> Configure Prometheus retention policies appropriately"
+echo "-> Implement progressive delivery safeguards (small canary weights)"
+echo "-> Add Argo Rollout analysis templates with strict thresholds"
+echo "-> Use database connection pooling and query timeouts"
+echo "-> Test new instrumentation in staging first"
+echo "-> Review metrics cardinality before production deployment"
+echo "-> Set up Prometheus TSDB health alerts"
+echo "-> Use metric aggregation for high-cardinality data"
+echo "-> Implement query performance monitoring on database"
 
 echo -e "\n${GREEN}=== Scenario 15 Complete ===${NC}"
-echo "This demonstrates: Prometheus High Cardinality → TSDB Corruption"
-echo "                  → Metrics Drop → Alert Delay → Argo Rollout Overshoot → DB Overload"
+echo "This demonstrates: Prometheus High Cardinality -> TSDB Corruption"
+echo "                  -> Metrics Drop -> Alert Delay -> Argo Rollout Overshoot -> DB Overload"
 echo ""
 echo -e "${YELLOW}Cluster Information:${NC}"
 if [ "$SKIP_SETUP" = false ]; then
@@ -812,9 +812,9 @@ else
 fi
 echo ""
 echo -e "${YELLOW}Key Learnings:${NC}"
-echo "• Unbounded metric labels cause cardinality explosion"
-echo "• TSDB corruption creates cascading monitoring failures"
-echo "• Stale metrics lead to incorrect automated decisions"
-echo "• Progressive delivery fails when metrics are unreliable"
-echo "• Monitoring system failure hides critical application bugs"
-echo "• Metric cardinality must be controlled at instrumentation level"
+echo "-> Unbounded metric labels cause cardinality explosion"
+echo "-> TSDB corruption creates cascading monitoring failures"
+echo "-> Stale metrics lead to incorrect automated decisions"
+echo "-> Progressive delivery fails when metrics are unreliable"
+echo "-> Monitoring system failure hides critical application bugs"
+echo "-> Metric cardinality must be controlled at instrumentation level"

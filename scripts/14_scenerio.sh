@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Scenario 14: Postgres Schema Drift → ORM Migration Failure${NC}"
-echo -e "${BLUE}    → API Crash → Prometheus Missing Series → Alert Flap → Argo Rollback Loop${NC}"
+echo -e "${BLUE}  Scenario 14: Postgres Schema Drift -> ORM Migration Failure${NC}"
+echo -e "${BLUE}    -> API Crash -> Prometheus Missing Series -> Alert Flap -> Argo Rollback Loop${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Function to check if a command exists
@@ -66,7 +66,7 @@ if [ "$SKIP_SETUP" = false ]; then
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         bash "${SCRIPT_DIR}/setup.sh"
     else
-        echo -e "${GREEN}✓ kind is installed${NC}"
+        echo -e "${GREEN}-> kind is installed${NC}"
 
         # Create cluster using setup script
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -101,7 +101,7 @@ if ! kubectl cluster-info &>/dev/null; then
     echo -e "${RED}Error: Cannot access Kubernetes cluster${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Cluster access verified${NC}"
+echo -e "${GREEN}-> Cluster access verified${NC}"
 kubectl get nodes
 
 # Create namespaces
@@ -109,7 +109,7 @@ echo -e "\n${YELLOW}=== Creating Namespaces ===${NC}"
 kubectl create namespace app --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-echo -e "${GREEN}✓ Namespaces created${NC}"
+echo -e "${GREEN}-> Namespaces created${NC}"
 
 # Install ArgoCD
 echo -e "\n${YELLOW}=== Installing ArgoCD ===${NC}"
@@ -120,7 +120,7 @@ echo "Waiting for ArgoCD to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/argocd-server -n argocd 2>/dev/null || echo "ArgoCD server taking longer..."
 kubectl wait --for=condition=Available --timeout=300s deployment/argocd-repo-server -n argocd 2>/dev/null || echo "Repo server taking longer..."
 kubectl wait --for=condition=Available --timeout=300s deployment/argocd-application-controller -n argocd 2>/dev/null || echo "Controller taking longer..."
-echo -e "${GREEN}✓ ArgoCD installed${NC}"
+echo -e "${GREEN}-> ArgoCD installed${NC}"
 
 # Install Prometheus & Alertmanager
 echo -e "\n${YELLOW}=== Installing Prometheus & Alertmanager ===${NC}"
@@ -225,7 +225,7 @@ EOF
 
 kubectl wait --for=condition=Available --timeout=120s deployment/prometheus -n monitoring 2>/dev/null || echo "Prometheus taking longer..."
 kubectl wait --for=condition=Available --timeout=120s deployment/alertmanager -n monitoring 2>/dev/null || echo "Alertmanager taking longer..."
-echo -e "${GREEN}✓ Monitoring stack installed${NC}"
+echo -e "${GREEN}-> Monitoring stack installed${NC}"
 
 # Deploy PostgreSQL with correct schema (v1)
 echo -e "\n${YELLOW}=== Deploying PostgreSQL Database (Schema v1) ===${NC}"
@@ -300,7 +300,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=60s deployment/postgres -n app 2>/dev/null || echo "Database taking longer..."
-echo -e "${GREEN}✓ PostgreSQL deployed with schema v1${NC}"
+echo -e "${GREEN}-> PostgreSQL deployed with schema v1${NC}"
 
 # Deploy API application (v1 - compatible with schema v1)
 echo -e "\n${YELLOW}=== Deploying API Application (v1) ===${NC}"
@@ -340,8 +340,8 @@ spec:
             echo "Expected schema: v1"
             echo ""
             echo "Running database migrations..."
-            echo "✓ Migration check passed - Schema v1 compatible"
-            echo "✓ Application started successfully"
+            echo "-> Migration check passed - Schema v1 compatible"
+            echo "-> Application started successfully"
             echo ""
             
             REQUEST_COUNT=0
@@ -388,7 +388,7 @@ spec:
 EOF
 
 kubectl wait --for=condition=Available --timeout=120s deployment/api-service -n app 2>/dev/null || echo "API service taking longer..."
-echo -e "${GREEN}✓ API Service v1 deployed and healthy${NC}"
+echo -e "${GREEN}-> API Service v1 deployed and healthy${NC}"
 
 # Show initial healthy state
 echo -e "\n${BLUE}=== Initial Healthy State ===${NC}"
@@ -436,9 +436,9 @@ data:
     ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
 EOF
 
-echo -e "${RED}✗ Schema altered: Added 'phone' column to users table${NC}"
-echo -e "${RED}✗ Change NOT tracked in migration system (Flyway/Alembic)${NC}"
-echo -e "${RED}✗ Application ORM expects schema v1${NC}"
+echo -e "${RED}-> Schema altered: Added 'phone' column to users table${NC}"
+echo -e "${RED}-> Change NOT tracked in migration system (Flyway/Alembic)${NC}"
+echo -e "${RED}-> Application ORM expects schema v1${NC}"
 
 # Step 1: Schema Drift
 echo -e "\n${BLUE}=== Step 1: Schema Drift ===${NC}"
@@ -547,7 +547,7 @@ kubectl get events -n app --sort-by='.lastTimestamp' | grep -i "readiness\|unhea
 
 # Step 4: Prometheus Missing Time-Series
 echo -e "\n${BLUE}=== Step 4: Prometheus Missing Time-Series ===${NC}"
-echo "API pods not ready → metrics endpoints unavailable..."
+echo "API pods not ready -> metrics endpoints unavailable..."
 echo "Time-series for API latency disappearing from TSDB..."
 
 kubectl apply -f - <<EOF
@@ -581,7 +581,7 @@ EOF
 kubectl get configmap prometheus-series-status -n monitoring -o jsonpath='{.data.status}'
 
 # Step 5: Alert Flap
-echo -e "\n${BLUE}=== Step 5: Alert Flap (Firing → Resolved → Firing) ===${NC}"
+echo -e "\n${BLUE}=== Step 5: Alert Flap (Firing -> Resolved -> Firing) ===${NC}"
 echo "Missing metrics cause alerts to flap..."
 
 kubectl apply -f - <<EOF
@@ -643,32 +643,32 @@ data:
     Sync/Rollback History:
     
     [2m 30s ago] Sync attempt #1
-      → Deployment api-service updated (v2)
-      → Health check: Progressing
-      → Health check: Degraded (pods not ready)
-      → AUTO-ROLLBACK triggered
+      -> Deployment api-service updated (v2)
+      -> Health check: Progressing
+      -> Health check: Degraded (pods not ready)
+      -> AUTO-ROLLBACK triggered
     
     [2m 00s ago] Rollback to previous version (v1)
-      → Deployment api-service updated (v1)
-      → Health check: Progressing
-      → Migration fails (schema mismatch from v2)
-      → Health check: Degraded
-      → Rollback FAILED
+      -> Deployment api-service updated (v1)
+      -> Health check: Progressing
+      -> Migration fails (schema mismatch from v2)
+      -> Health check: Degraded
+      -> Rollback FAILED
     
     [1m 30s ago] Sync attempt #2
-      → Deployment api-service updated (v2)
-      → Health check: Progressing
-      → Health check: Degraded (same error)
-      → AUTO-ROLLBACK triggered
+      -> Deployment api-service updated (v2)
+      -> Health check: Progressing
+      -> Health check: Degraded (same error)
+      -> AUTO-ROLLBACK triggered
     
     [1m 00s ago] Rollback to previous version (v1)
-      → Same failure pattern
-      → Health check: Degraded
-      → Rollback FAILED
+      -> Same failure pattern
+      -> Health check: Degraded
+      -> Rollback FAILED
     
     [30s ago] Sync attempt #3
-      → LOOP DETECTED
-      → Manual intervention required
+      -> LOOP DETECTED
+      -> Manual intervention required
     
     Status: ROLLBACK LOOP
     Reason: Both versions fail due to schema drift
@@ -695,36 +695,36 @@ echo -e "\n${YELLOW}Recent Events:${NC}"
 kubectl get events -n app --sort-by='.lastTimestamp' | tail -15
 
 echo -e "\n${RED}=== Incident Summary ===${NC}"
-echo -e "${RED}✗ Database schema manually altered (added 'phone' column)${NC}"
-echo -e "${RED}✗ Schema change NOT tracked in migration system${NC}"
-echo -e "${RED}✗ Application deployment fails migration check${NC}"
-echo -e "${RED}✗ Pods enter CrashLoopBackOff (readiness probe fails)${NC}"
-echo -e "${RED}✗ Prometheus time-series disappear from TSDB${NC}"
-echo -e "${RED}✗ Alerts flap: Firing → Resolved → Firing (4 flaps in 5 min)${NC}"
-echo -e "${RED}✗ ArgoCD rollback loop (both v1 and v2 fail)${NC}"
-echo -e "${RED}✗ No clear root cause visible in monitoring${NC}"
-echo -e "${RED}✗ Dev team blames CI/CD pipeline${NC}"
-echo -e "${RED}✗ Extended outage (recovery blocked by endless loop)${NC}"
+echo -e "${RED}-> Database schema manually altered (added 'phone' column)${NC}"
+echo -e "${RED}-> Schema change NOT tracked in migration system${NC}"
+echo -e "${RED}-> Application deployment fails migration check${NC}"
+echo -e "${RED}-> Pods enter CrashLoopBackOff (readiness probe fails)${NC}"
+echo -e "${RED}-> Prometheus time-series disappear from TSDB${NC}"
+echo -e "${RED}-> Alerts flap: Firing -> Resolved -> Firing (4 flaps in 5 min)${NC}"
+echo -e "${RED}-> ArgoCD rollback loop (both v1 and v2 fail)${NC}"
+echo -e "${RED}-> No clear root cause visible in monitoring${NC}"
+echo -e "${RED}-> Dev team blames CI/CD pipeline${NC}"
+echo -e "${RED}-> Extended outage (recovery blocked by endless loop)${NC}"
 
 echo -e "\n${YELLOW}=== Propagation Chain (6 Levels) ===${NC}"
-echo "1️⃣  Schema Drift: DB table altered outside migration workflow"
-echo "2️⃣  ORM Migration Fails: App deploy fails startup migration check"
-echo "3️⃣  API Crash: App CrashLoopBackOff, readiness probe fails"
-echo "4️⃣  Prometheus Missing Series: Metrics labels disappear from TSDB"
-echo "5️⃣  Alert Flap: Missing metrics → alerts resolve/fire intermittently"
-echo "6️⃣  Argo Rollback Loop: Repeated rollback + redeploy (same failure)"
+echo "1->  Schema Drift: DB table altered outside migration workflow"
+echo "2->  ORM Migration Fails: App deploy fails startup migration check"
+echo "3->  API Crash: App CrashLoopBackOff, readiness probe fails"
+echo "4->  Prometheus Missing Series: Metrics labels disappear from TSDB"
+echo "5->  Alert Flap: Missing metrics -> alerts resolve/fire intermittently"
+echo "6->  Argo Rollback Loop: Repeated rollback + redeploy (same failure)"
 
 echo -e "\n${YELLOW}=== Detection Signals ===${NC}"
-echo "✓ Database migration failure errors in application logs"
-echo "✓ CrashLoopBackOff pod status"
-echo "✓ ArgoCD sync/rollback events in rapid succession"
-echo "✓ Missing Prometheus time-series (metrics disappearing)"
-echo "✓ Alert state flapping (firing → resolved → firing)"
-echo "✓ Readiness probe failures"
-echo "✓ Schema validation errors in logs"
-echo "✓ Database audit logs showing manual schema changes"
-echo "✓ ArgoCD application health: Degraded"
-echo "✓ ORM/migration tool errors (alembic, flyway, liquibase)"
+echo "-> Database migration failure errors in application logs"
+echo "-> CrashLoopBackOff pod status"
+echo "-> ArgoCD sync/rollback events in rapid succession"
+echo "-> Missing Prometheus time-series (metrics disappearing)"
+echo "-> Alert state flapping (firing -> resolved -> firing)"
+echo "-> Readiness probe failures"
+echo "-> Schema validation errors in logs"
+echo "-> Database audit logs showing manual schema changes"
+echo "-> ArgoCD application health: Degraded"
+echo "-> ORM/migration tool errors (alembic, flyway, liquibase)"
 
 echo -e "\n${YELLOW}=== Remediation Steps ===${NC}"
 echo "To fix this cascading failure:"
@@ -766,26 +766,26 @@ echo "   kubectl patch application api-service -n argocd --type merge \\"
 echo "     -p '{\"spec\":{\"syncPolicy\":{\"automated\":{\"prune\":true,\"selfHeal\":true}}}}'"
 
 echo -e "\n${YELLOW}=== Prevention Measures ===${NC}"
-echo "• Enforce database schema change controls (no direct DB access)"
-echo "• Use migration tools exclusively (Flyway, Liquibase, Alembic)"
-echo "• Implement database change approval workflows"
-echo "• Enable database audit logging for schema changes"
-echo "• Test migrations in staging environments before production"
-echo "• Use schema validation in CI/CD pipeline"
-echo "• Configure migration failure alerts"
-echo "• Implement database GitOps workflows"
-echo "• Use read-only database users for application runtime"
-echo "• Add pre-deployment schema compatibility checks"
-echo "• Disable ArgoCD auto-rollback for database-dependent services"
-echo "• Set up database schema monitoring and drift detection"
-echo "• Implement schema versioning with strict controls"
-echo "• Use database migration dry-run/preview before applying"
-echo "• Create baseline schema snapshots for disaster recovery"
-echo "• Document all schema changes in version control"
+echo "-> Enforce database schema change controls (no direct DB access)"
+echo "-> Use migration tools exclusively (Flyway, Liquibase, Alembic)"
+echo "-> Implement database change approval workflows"
+echo "-> Enable database audit logging for schema changes"
+echo "-> Test migrations in staging environments before production"
+echo "-> Use schema validation in CI/CD pipeline"
+echo "-> Configure migration failure alerts"
+echo "-> Implement database GitOps workflows"
+echo "-> Use read-only database users for application runtime"
+echo "-> Add pre-deployment schema compatibility checks"
+echo "-> Disable ArgoCD auto-rollback for database-dependent services"
+echo "-> Set up database schema monitoring and drift detection"
+echo "-> Implement schema versioning with strict controls"
+echo "-> Use database migration dry-run/preview before applying"
+echo "-> Create baseline schema snapshots for disaster recovery"
+echo "-> Document all schema changes in version control"
 
 echo -e "\n${GREEN}=== Scenario 14 Complete ===${NC}"
-echo "This demonstrates: Postgres Schema Drift → ORM Migration Failure"
-echo "                  → API Crash → Prometheus Missing Series → Alert Flap → Argo Rollback Loop"
+echo "This demonstrates: Postgres Schema Drift -> ORM Migration Failure"
+echo "                  -> API Crash -> Prometheus Missing Series -> Alert Flap -> Argo Rollback Loop"
 echo ""
 echo -e "${YELLOW}Cluster Information:${NC}"
 if [ "$SKIP_SETUP" = false ]; then
@@ -796,9 +796,9 @@ else
 fi
 echo ""
 echo -e "${YELLOW}Key Learnings:${NC}"
-echo "• Manual database changes outside migration control cause drift"
-echo "• ORM tools fail when schema doesn't match migration history"
-echo "• Rollback loops occur when both old and new versions fail"
-echo "• Missing metrics create observability gaps and alert flapping"
-echo "• Root cause hidden when dev teams blame CI/CD instead of DB"
-echo "• Database schema changes need strict governance"
+echo "-> Manual database changes outside migration control cause drift"
+echo "-> ORM tools fail when schema doesn't match migration history"
+echo "-> Rollback loops occur when both old and new versions fail"
+echo "-> Missing metrics create observability gaps and alert flapping"
+echo "-> Root cause hidden when dev teams blame CI/CD instead of DB"
+echo "-> Database schema changes need strict governance"
