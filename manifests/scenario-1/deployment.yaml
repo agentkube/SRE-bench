@@ -51,6 +51,7 @@ spec:
             configMapKeyRef:
               name: app-config
               key: new.feature
+              optional: true
         readinessProbe:
           exec:
             command:

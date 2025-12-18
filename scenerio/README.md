@@ -46,8 +46,24 @@ A ConfigMap updated manually in the cluster but not synced in ArgoCD.
 ### Detection Signals
 - `CrashLoopBackOff` pod status
 - ArgoCD drift warnings
-- Application logs showing missing configuration
+- Application logs showing missing configuration (`ERROR: NEW_FEATURE environment variable is missing!`)
 - Increased restart count in pods
+- Pod events showing `BackOff` and container restarts
+
+**Commands to observe:**
+```bash
+# View pod status showing CrashLoopBackOff
+kubectl get pods -n demo-app
+
+# View events showing crashes
+kubectl get events -n demo-app --sort-by='.lastTimestamp'
+
+# View pod logs showing the error
+kubectl logs -n demo-app -l app=demo-app --tail=20
+
+# Describe pod for detailed restart info
+kubectl describe pod -n demo-app -l app=demo-app | grep -A5 "State\|Restart"
+```
 
 ### Mitigation Steps
 1. Review ArgoCD drift reports

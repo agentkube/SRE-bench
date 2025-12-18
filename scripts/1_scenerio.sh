@@ -232,15 +232,25 @@ kubectl get configmap app-config -n demo-app -o yaml | grep -A 5 "data:"
 echo -e "\n${YELLOW}=== Pods Restarting with Rolled-Back Config ===${NC}"
 kubectl rollout restart deployment/demo-app -n demo-app 2>/dev/null || echo "Deployment restarting..."
 
-echo "Waiting to observe CrashLoopBackOff..."
-sleep 15
+echo "Waiting to observe CrashLoopBackOff (this may take 30-60 seconds)..."
+echo "Pods will fail startup check for NEW_FEATURE env var and restart..."
+sleep 30
+
+# Wait a bit more and show intermediate status
+echo -e "\n${YELLOW}Intermediate pod status:${NC}"
+kubectl get pods -n demo-app -o wide
+sleep 20
 
 echo -e "\n${BLUE}=== Scenario 1 Status ===${NC}"
 echo -e "\n${YELLOW}Pod Status:${NC}"
 kubectl get pods -n demo-app
 
-echo -e "\n${YELLOW}Pod Events:${NC}"
-kubectl get events -n demo-app --sort-by='.lastTimestamp' | tail -20
+echo -e "\n${YELLOW}Pod Events (showing crashes and restarts):${NC}"
+kubectl get events -n demo-app --sort-by='.lastTimestamp' --field-selector type!=Normal 2>/dev/null | tail -20 || \
+  kubectl get events -n demo-app --sort-by='.lastTimestamp' | tail -20
+
+echo -e "\n${YELLOW}All Events:${NC}"
+kubectl get events -n demo-app --sort-by='.lastTimestamp' | tail -15
 
 echo -e "\n${YELLOW}Pod Logs (showing failures):${NC}"
 for pod in $(kubectl get pods -n demo-app -l app=demo-app -o name | head -1); do
