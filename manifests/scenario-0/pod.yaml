@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broken-image-demo
+  namespace: sre-demo
+  labels:
+    app: broken-image-demo
+    scenario: "0"
+spec:
+  containers:
+  - name: app
+    image: nonexistent-registry.io/invalid-image:v1.0
+    imagePullPolicy: Always
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "200m"

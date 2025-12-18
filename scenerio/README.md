@@ -1,11 +1,12 @@
 # SRE Failure Scenarios
 
-This document contains 16 real-world SRE incident scenarios designed for training, testing, and RCA (Root Cause Analysis) practice. Each scenario simulates cascading failures common in Kubernetes, GitOps, and cloud-native environments.
+This document contains 17 real-world SRE incident scenarios designed for training, testing, and RCA (Root Cause Analysis) practice. Each scenario simulates cascading failures common in Kubernetes, GitOps, and cloud-native environments.
 
 ---
 
 ## Table of Contents
 
+0. [Broken Image → ImagePullBackOff](#0-broken-image--imagepullbackoff) ⭐ *Beginner*
 1. [Stale ConfigMap -> Argo CD Drift -> Application CrashLoopBackOff](#1-stale-configmap--argo-cd-drift--application-crashloopbackoff)
 2. [Expired Secret Rotation -> Database Auth Failures -> API Downtime](#2-expired-secret-rotation--database-auth-failures--api-downtime)
 3. [Node Pressure + HPA Misconfiguration -> Evictions -> Argo Rollback](#3-node-pressure--hpa-misconfiguration--evictions--argo-rollback)
@@ -26,7 +27,71 @@ This document contains 16 real-world SRE incident scenarios designed for trainin
 
 ---
 
+## 0. Broken Image → ImagePullBackOff
+
+> ⭐ **Beginner Scenario** - The simplest Kubernetes failure. Perfect for learning basic troubleshooting.
+
+### Primary Trigger
+Pod references a container image that doesn't exist or is unreachable.
+
+### Propagation Path
+1. **Pod Created**: Kubernetes scheduler assigns pod to a node
+2. **Image Pull Attempt**: Kubelet tries to pull the container image
+3. **Pull Failure**: Image registry is unreachable or image doesn't exist
+4. **Backoff Loop**: Kubelet enters exponential backoff retry → ImagePullBackOff
+
+### Impact
+- Pod never starts
+- Application unavailable
+- Deployment stuck in pending state
+- No container logs available (container never created)
+
+### Detection Signals
+- `ImagePullBackOff` or `ErrImagePull` pod status
+- Events showing "Failed to pull image" or "rpc error"
+- Container status: waiting with reason ImagePullBackOff
+
+**Commands to observe:**
+```bash
+# View pod status showing ImagePullBackOff
+kubectl get pods -n sre-demo
+
+# View events showing image pull failures
+kubectl get events -n sre-demo --sort-by='.lastTimestamp'
+
+# Describe pod for detailed error messages
+kubectl describe pod broken-image-demo -n sre-demo
+
+# Check container status
+kubectl get pod broken-image-demo -n sre-demo -o jsonpath='{.status.containerStatuses[0].state}'
+```
+
+### Mitigation Steps
+1. Identify the incorrect image reference
+2. Verify the image exists in the registry
+3. Check registry authentication (imagePullSecrets)
+4. Update pod/deployment with correct image
+5. Verify pod starts successfully
+
+### Prevention
+- Use image digest (SHA) instead of mutable tags
+- Implement CI/CD image validation
+- Use private registry with proper access controls
+- Set up image scanning and vulnerability checks
+- Pre-pull images to nodes for critical workloads
+
+### Common Causes
+1. Typo in image name or tag
+2. Image deleted from registry
+3. Private registry without imagePullSecrets
+4. Registry rate limiting (Docker Hub)
+5. Network policies blocking registry access
+6. Registry authentication expired
+
+---
+
 ## 1. Stale ConfigMap -> Argo CD Drift -> Application CrashLoopBackOff
+
 
 ### Primary Trigger
 A ConfigMap updated manually in the cluster but not synced in ArgoCD.
